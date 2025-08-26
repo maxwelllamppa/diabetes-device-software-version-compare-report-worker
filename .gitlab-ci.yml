@@ -1,0 +1,65 @@
+stages:
+  - verify
+  - publish
+
+image: case.artifacts.medtronic.com/teneo-docker-dev-virtual/teneo-dev-base:0.3.0
+
+variables:
+  DATABASE_HOST: postgres
+  DATABASE_PASSWORD: letmein
+  POSTGRES_USER: teneo
+  POSTGRES_PASSWORD: letmein
+  POSTGRES_DB: teneo
+  DB_MIGRATE_ENV: ci
+
+verify:
+  stage: verify
+  tags: ["shared"]
+  services:
+    - name: case.artifacts.medtronic.com/docker-dev-virtual/postgres:latest
+      alias: postgres
+
+  script:
+    - echo 'Installing dependencies...'
+    - |
+      echo "registry = $NPM_REGISTRY_URL
+      _auth = $NPM_AUTH_TOKEN
+      always-auth = true" > .npmrc
+    - yarn install
+    - echo 'Dependencies installed.'
+    - echo 'Verifying Teneo coding standards...'
+    - yarn lint
+    - echo 'Teneo coding standards verified.'
+    - echo 'Building distributable...'
+    - yarn dist
+    - echo 'Distributable built.'
+    - echo 'Running tests with coverage...'
+    # - yarn coverage
+    # - echo 'Tests complete.'
+
+  artifacts:
+    paths:
+      - dist/
+      - .npmrc
+
+publish:
+  stage: publish
+  only:
+    - tags
+  tags: ["shared"]
+  dependencies:
+    - verify
+  image:
+    name: case.artifacts.medtronic.com/docker-dev-virtual/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - tag=$IMAGE_NAME:${CI_COMMIT_REF_NAME}
+    - echo "Running publish for version - $tag"
+    - deployTag=$IMAGE_NAME:dev
+    - echo "Also Pushing Deploy Tag - $deployTag"
+    - echo "{\"auths\":{\"case.artifacts.medtronic.com\":{\"username\":\"$USER\",\"password\":\"$PASSWD\"}}}" > /kaniko/.docker/config.json
+    - |
+      echo "registry = $NPM_REGISTRY_URL
+      _auth = $NPM_AUTH_TOKEN
+      always-auth = true" > .npmrc
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $REGISTRY_PATH/$tag --destination $REGISTRY_PATH/$deployTag

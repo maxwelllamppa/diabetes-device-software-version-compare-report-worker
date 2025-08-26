@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  app:
+    image: diab-device-package-report-worker
+    build:
+      context: .
+      target: dev
+    command: sh -c 'yarn start'
+    env_file:
+      - .prod.env
+    environment:
+      NODE_ENV: development
+    ports:
+      - "8092:8080"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./node_modules/@teneo:/app/node_modules/@teneo
+      - ./docker/certs:/certs

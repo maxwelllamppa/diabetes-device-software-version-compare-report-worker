@@ -1,0 +1,9 @@
+{
+    "extends": "@teneo/dev/config/app-tsconfig.json",
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "rootDir": "./",
+        "esModuleInterop": true,
+        "resolveJsonModule": true
+    }
+}

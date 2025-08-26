@@ -1,0 +1,55 @@
+{
+  "name": "scheduled-report-worker",
+  "version": "0.0.0",
+  "description": "Medtronic Teneo Scheduled Report Worker",
+  "main": "index.js",
+  "type": "module",
+  "exports": "./index.js",
+  "scripts": {
+    "clean": "NODE_OPTIONS='--loader ts-node/esm' gulp clean",
+    "dist": "NODE_OPTIONS='--loader ts-node/esm' gulp dist",
+    "test": "NODE_OPTIONS='--loader ts-node/esm' NODE_ENV=test ./node_modules/@teneo/dev/scripts/test.sh",
+    "coverage": "./node_modules/@teneo/dev/scripts/coverage.sh",
+    "start": "NODE_OPTIONS='--loader ts-node/esm' gulp watch 2>&1 | ./node_modules/@teneo/dev/scripts/pretty_log.js",
+    "format": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "prepare": "if [ -d ./.husky/ ]; then husky install; fi",
+    "version": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md",
+    "postversion": "git push --follow-tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://code.medtronic.com/teneo/templates/scheduled-report-worker.git"
+  },
+  "author": "Medtronic",
+  "license": "ISC",
+  "homepage": "https://code.medtronic.com/teneo/templates/scheduled-report-worker#readme",
+  "resolutions": {
+    "source-map": "0.8.0-beta.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@teneo/base": "2.1.5",
+    "@teneo/container": "2.0.0",
+    "@teneo/device-domain": "2.1.0",
+    "@teneo/device-registry-client": "5.0.1",
+    "@teneo/mesh-config-provider": "3.0.0",
+    "@teneo/package-domain": "2.0.0",
+    "@teneo/package-registry-client": "5.0.0",
+    "@teneo/report-domain": "2.0.1",
+    "@teneo/report-registry-client": "v3.0.0",
+    "@teneo/rest-client": "6.0.0",
+    "@teneo/rest-client-components": "3.0.0",
+    "@teneo/rest-resources": "^3.0.1",
+    "@teneo/rest-starter": "2.2.2",
+    "@teneo/schedule-starter": "2.0.0",
+    "csv-stringify": "6.5.1",
+    "keygen": "0.4.0"
+  },
+  "devDependencies": {
+    "@teneo/dev": "2.0.1",
+    "@teneo/eslint-config": "1.1.0",
+    "@teneo/rest-dev": "3.1.0",
+    "@types/csv-stringify": "3.1.0"
+  }
+}

@@ -1,0 +1,11 @@
+teneo:
+  api:
+    tenant:
+      based: true
+  auth:
+    service: device-report-worker
+  task:
+    worker:
+      label: ScheduledReportWorker
+      immediate: true
+      schedule: '0 */2 * * *'

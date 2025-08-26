@@ -1,0 +1,14 @@
+teneo:
+  mesh:
+    endpoint:
+      routing: external
+  task:
+    worker:
+      label: ScheduledReportWorker
+      immediate: true
+      schedule: "0 */2 * * *"
+      hoursInProgress: 1
+      assignmentBatchSize: 15000
+      packageBatchSize: 5000
+      deviceBatchSize: 5000
+      concurrency: 2
