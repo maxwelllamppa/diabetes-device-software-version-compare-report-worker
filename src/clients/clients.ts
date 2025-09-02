@@ -33,13 +33,13 @@ export class DeviceClient extends DeviceRegistryClient {
 
   @Container.inject({ role: 'logger' })
 
-  async loadAll(limit: number, deviceGroupId: string, traceId: string): Promise<Device.Value[]> {
+  async loadAll(limit: number, traceId: string): Promise<Device.Value[]> {
     let allDevices: Device.Value[] = []
     let loadMore = true
 
     while (loadMore) {
       const response = await this.get<DeviceResponse, DeviceResponse>('LoadAllDevices', traceId)
-        .endpoint(`devices?offset=${allDevices.length}&limit=${limit}&filter=metadata.groupIds*${deviceGroupId}&sort=created_at:desc`)
+        .endpoint(`devices?offset=${allDevices.length}&limit=${limit}&sort=created_at:desc`)
         .accept('json')
         .onFailure('Unable to get devices.')
         .timeout(200000)
@@ -148,7 +148,7 @@ export class ExchangeClient extends Client.Standard.V1 {
   ): Result.Async<Result.Page<Package.Assignment.Value>> {
     return this.getPage(
       (builder) => builder.endpoint(
-        `assignments?limit=${limit}&offset=${offset}&sort=${sort}&filter=(status:applied|status:pending|status:ready|status:inProgress)`
+        `assignments?limit=${limit}&offset=${offset}&sort=${sort}&filter=(status:applied)`
       ),
       traceId || ''
     )

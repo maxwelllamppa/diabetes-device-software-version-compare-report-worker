@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   app:
-    image: diab-device-package-report-worker
+    image: diabetes-device-software-version-compare-report-worker
     build:
       context: .
       target: dev
