@@ -1,12 +1,11 @@
 /* eslint-disable max-len */
 import { Logging } from '@teneo/base'
 import * as Container from '@teneo/container'
-import { Device } from '@teneo/device-domain'
 import { DeviceRegistryClient } from '@teneo/device-registry-client'
 import { Package } from '@teneo/package-domain'
 import { PackageRegistryClient } from '@teneo/package-registry-client'
 import { Client, Response, Result } from '@teneo/rest-client'
-import { DeviceResponse, PackageResponse, TemplateResponse, TenantResponse } from '../types/index.js'
+import { AssignmentCompact, DeviceCompact, DeviceResponse, PackageResponse, TemplateResponse, TenantResponse } from '../types/index.js'
 import { Template } from '../types/template.js'
 import { Tenant } from '../types/tenant.js'
 
@@ -33,8 +32,8 @@ export class DeviceClient extends DeviceRegistryClient {
 
   @Container.inject({ role: 'logger' })
 
-  async loadAll(limit: number, traceId: string): Promise<Device.Value[]> {
-    let allDevices: Device.Value[] = []
+  async loadAll(limit: number, traceId: string): Promise<DeviceCompact[]> {
+    let allDevices: DeviceCompact[] = []
     let loadMore = true
 
     while (loadMore) {
@@ -50,7 +49,17 @@ export class DeviceClient extends DeviceRegistryClient {
       }
 
       if (response.value.items.length > 0) {
-        allDevices = allDevices.concat(response.value.items)
+        for (const device of response.value.items) {
+          const deviceCompact: DeviceCompact = {
+            id: device.id,
+            businessId: device.businessId,
+            softwareVersionNumber: device.metadata.softwareVersionNumber as string
+          }
+          allDevices = allDevices.concat(deviceCompact)
+        }
+        this.logger?.info(
+          `Fetched ${response.value.items.length} devices on this page. Total so far: ${allDevices.length}`
+        )
       }
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -90,6 +99,9 @@ export class PackageClient extends PackageRegistryClient {
 
       if (response.value.items.length > 0) {
         allPackages = allPackages.concat(response.value.items)
+        this.logger?.info(
+          `Fetched ${response.value.items.length} packages on this page. Total so far: ${allPackages.length}`
+        )
       }
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -110,8 +122,8 @@ export class ExchangeClient extends Client.Standard.V1 {
   async loadAll(
     limit: number,
     traceId: string
-  ): Promise<Package.Assignment.Value[]> {
-    let allAssignments: Package.Assignment.Value[] = []
+  ): Promise<AssignmentCompact[]> {
+    let allAssignments: AssignmentCompact[] = []
     let loadMore = true
 
     while (loadMore) {
@@ -126,12 +138,25 @@ export class ExchangeClient extends Client.Standard.V1 {
       }
 
       if (response.value.items.length > 0) {
-        allAssignments = allAssignments.concat(response.value.items)
-        // Log the current total count after this page
+        for (const assignment of response.value.items) {
+          const assignmentCompact: AssignmentCompact = {
+            id: assignment.id,
+            deviceId: assignment.deviceId,
+            packageId: assignment.packageId
+          }
+          allAssignments = allAssignments.concat(assignmentCompact)
+        }
         this.logger?.info(
           `Fetched ${response.value.items.length} assignments on this page. Total so far: ${allAssignments.length}`
         )
       }
+      // if (response.value.items.length > 0) {
+      //   allAssignments = allAssignments.concat(response.value.items)
+      //   // Log the current total count after this page
+      //   this.logger?.info(
+      //     `Fetched ${response.value.items.length} assignments on this page. Total so far: ${allAssignments.length}`
+      //   )
+      // }
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       loadMore = response.value.nextUrl !== undefined || response.value.next !== undefined
@@ -141,7 +166,7 @@ export class ExchangeClient extends Client.Standard.V1 {
   }
 
   async getAssignments(
-    limit = 15000,
+    limit = 30000,
     offset = 0,
     sort = 'createdAt:asc',
     traceId?: string

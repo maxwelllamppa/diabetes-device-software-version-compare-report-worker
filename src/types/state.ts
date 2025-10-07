@@ -1,13 +1,25 @@
-import { Device } from '@teneo/device-domain'
 import { Package } from '@teneo/package-domain'
 
+export interface AssignmentCompact {
+  id: string
+  deviceId: string
+  packageId: string
+  // packageTypeId: string
+}
 
-export interface AssignmentWithPackage extends Package.Assignment.Value {
+export interface AssignmentWithPackage extends AssignmentCompact {
   package: Package.Value
   status: Package.Assignment.Status
 }
 
-export interface DeviceWithAssignments extends Device.Value {
+export interface DeviceCompact {
+  id: string
+  businessId: string
+  // metadata: Json.Map
+  softwareVersionNumber: string
+}
+
+export interface DeviceWithAssignments extends DeviceCompact {
   assignments: AssignmentWithPackage[]
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable max-len */
 import * as Container from '@teneo/container'
 import * as Rest from '@teneo/rest-client-components'
@@ -63,35 +64,42 @@ export class ReportService {
       return
     }
 
-    const reportRows = [ [ 'Serial Number', 'Country', 'Model', 'Hardware Version', 'Package Software', 'Package Status', 'Package Date' ] ]
+    const reportRows = [ [ 'Serial Number', 'Software Version', 'Package Software Name' ] ]
     for (const device of state.devices) {
       logger.info(device.businessId)
-      if (!device.metadata) {
+      if (!device.softwareVersionNumber) {
         return
       }
-      logger.info('metadata', device.metadata)
       const {
         businessId,
-        metadata: {
-          country,
-          model,
-          hardwareVersionNumber
-        }
+        softwareVersionNumber
+
       } = device
 
+      logger.info('LOOK', { device })
+      if (!this.isIterable(device.assignments)) {
+        continue
+      }
       for (const assignment of device.assignments) {
+        if (softwareVersionNumber === assignment.package?.name) {
+          continue
+        }
         reportRows.push([
           businessId,
-          (country as string) || NA_STRING,
-          (model as string) || NA_STRING,
-          (hardwareVersionNumber as string) || NA_STRING,
-          (assignment.package?.name as string) || NA_STRING,
-          (assignment.status as string) || NA_STRING,
-          (assignment.updatedAt as Date).toString()
+          (softwareVersionNumber as string) || NA_STRING,
+          (assignment.package?.name as string) || NA_STRING
         ])
       }
     }
     return reportRows
+  }
+
+  isIterable(obj: any) {
+    // checks for null and undefined
+    if (obj == null) {
+      return false
+    }
+    return typeof obj[Symbol.iterator] === 'function'
   }
 
   private async uploadToS3(params: {
@@ -103,10 +111,10 @@ export class ReportService {
     const s3 = new S3Client({ region: this.regionName }) // credentials are read from env
 
     const command = new PutObjectCommand({
-      bucket: params.bucket,
-      key: params.key,
-      body: params.content,
-      contentType: params.contentType
+      Bucket: params.bucket,
+      Key: params.key,
+      Body: params.content,
+      ContentType: params.contentType
       // ServerSideEncryption: 'aws:kms',
       // SSEKMSKeyId: this.KMS_KEY_ARN
     })
@@ -116,12 +124,12 @@ export class ReportService {
 
   private async writeReport(tenantKey: string, config: WorkerConfig, reportData: string[][], logger: Logging.Logger, traceId: string) {
     logger.info('Report data:')
-    // console.log(JSON.stringify(reportData, null, ' '))
-    // const exit = true
-    // if (exit) {
-    //   return
-    // }
-    // logger.info('Writing to s3 bucket')
+    console.log(JSON.stringify(reportData, null, ' '))
+    const exit = true
+    if (exit) {
+      return
+    }
+    logger.info('Writing to s3 bucket')
 
     const now = new Date()
     const timestamp = now.toISOString().replace(/[:.]/g, '-')
