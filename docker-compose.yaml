@@ -6,7 +6,7 @@ services:
       target: dev
     command: sh -c 'yarn start'
     env_file:
-      - .prod.env
+      - .dev.env
     environment:
       NODE_ENV: development
     ports:

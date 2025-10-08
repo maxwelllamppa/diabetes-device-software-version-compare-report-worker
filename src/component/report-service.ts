@@ -3,8 +3,8 @@
 import * as Container from '@teneo/container'
 import * as Rest from '@teneo/rest-client-components'
 import { Logging } from '@teneo/base'
-import { WorkerConfig } from '../worker-config'
-import { DevicePackage } from '../device_package'
+import { WorkerConfig } from '../worker-config.js'
+import { DevicePackage } from '../device_package.js'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
 
@@ -124,7 +124,7 @@ export class ReportService {
 
   private async writeReport(tenantKey: string, config: WorkerConfig, reportData: string[][], logger: Logging.Logger, traceId: string) {
     logger.info('Report data:')
-    console.log(JSON.stringify(reportData, null, ' '))
+    logger.info(JSON.stringify(reportData, null, ' '))
     const exit = true
     if (exit) {
       return
