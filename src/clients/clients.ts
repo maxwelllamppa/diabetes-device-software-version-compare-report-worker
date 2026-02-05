@@ -5,9 +5,11 @@ import { DeviceRegistryClient } from '@teneo/device-registry-client'
 import { Package } from '@teneo/package-domain'
 import { PackageRegistryClient } from '@teneo/package-registry-client'
 import { Client, Response, Result } from '@teneo/rest-client'
-import { AssignmentCompact, DeviceCompact, DeviceResponse, PackageResponse, TemplateResponse, TenantResponse } from '../types/index.js'
+import { AssignmentCompact, AssignmentWithPackage, DeviceResponse, PackageResponse, TemplateResponse, TenantResponse } from '../types/index.js'
 import { Template } from '../types/template.js'
 import { Tenant } from '../types/tenant.js'
+
+const NA_STRING = ''
 
 type PackageVersion = {
   version: string
@@ -32,13 +34,14 @@ export class DeviceClient extends DeviceRegistryClient {
 
   @Container.inject({ role: 'logger' })
 
-  async loadAll(limit: number, traceId: string): Promise<DeviceCompact[]> {
-    let allDevices: DeviceCompact[] = []
+  async loadAll(assignmentsByDeviceId: { [key: string]: AssignmentWithPackage[] }, limit: number, traceId: string): Promise<string[][] | undefined> {
+    let allDevicesCount = 0
     let loadMore = true
+    const reportRows = [ [ 'Serial Number', 'Metadata Version', 'Assignment Version' ] ]
 
     while (loadMore) {
       const response = await this.get<DeviceResponse, DeviceResponse>('LoadAllDevices', traceId)
-        .endpoint(`devices?offset=${allDevices.length}&limit=${limit}&sort=created_at:desc`)
+        .endpoint(`devices?offset=${allDevicesCount}&limit=${limit}&sort=created_at:desc`)
         .accept('json')
         .onFailure('Unable to get devices.')
         .timeout(200000)
@@ -48,17 +51,45 @@ export class DeviceClient extends DeviceRegistryClient {
         throw response.errors
       }
 
+
       if (response.value.items.length > 0) {
+        allDevicesCount += response.value.items.length
         for (const device of response.value.items) {
-          const deviceCompact: DeviceCompact = {
-            id: device.id,
-            businessId: device.businessId,
-            softwareVersionNumber: device.metadata.softwareVersionNumber as string
+          // const deviceCompact: DeviceCompact = {
+          //   id: device.id,
+          //   businessId: device.businessId,
+          //   softwareVersionNumber: device.metadata.softwareVersionNumber as string
+          // }
+          // this.logger.info(device.businessId)
+          const {
+            businessId,
+            metadata: {
+              softwareVersionNumber
+            }
+          } = device
+          if (!softwareVersionNumber) {
+            // this.logger.info('SOFTWARE VERSION NUMBER NOT FOUND ', { device: device as any })
+            continue
           }
-          allDevices = allDevices.concat(deviceCompact)
+          // this.logger.info('LOOK', { device: device as any })
+          const assignments = assignmentsByDeviceId[device.id]
+
+          if (!assignments) {
+            continue
+          }
+          for (const assignment of assignments) {
+            if (softwareVersionNumber === assignment.package?.name) {
+              continue
+            }
+            reportRows.push([
+              businessId,
+              (softwareVersionNumber as string) || NA_STRING,
+              (assignment.package?.name as string) || NA_STRING
+            ])
+          }
         }
         this.logger?.info(
-          `Fetched ${response.value.items.length} devices on this page. Total so far: ${allDevices.length}`
+          `Fetched ${response.value.items.length} devices on this page. Total so far: ${allDevicesCount}`
         )
       }
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -66,7 +97,7 @@ export class DeviceClient extends DeviceRegistryClient {
       loadMore = response.value.nextUrl !== undefined || response.value.next !== undefined
     }
 
-    return allDevices
+    return reportRows
   }
 
 }
@@ -108,7 +139,7 @@ export class PackageClient extends PackageRegistryClient {
       loadMore = response.value.nextUrl !== undefined || response.value.next !== undefined
     }
 
-    return allPackages.filter((p) => p.status !== Package.Status.DISABLED)
+    return allPackages
   }
 
 }

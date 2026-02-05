@@ -4,7 +4,7 @@ import * as Container from '@teneo/container'
 import { Package } from '@teneo/package-domain'
 import * as Rest from '@teneo/rest-client-components'
 import { DeviceClient, ExchangeClient, PackageClient } from './clients/clients.js'
-import { AssignmentCompact, AssignmentWithPackage, DeviceWithAssignments, State } from './types/state.js'
+import { AssignmentWithPackage } from './types/state.js'
 import { WorkerConfig } from './worker-config.js'
 @Container.expose({ role: 'device.package', namespace: [ 'Device', 'Package' ]  })
 export class DevicePackage {
@@ -24,28 +24,13 @@ export class DevicePackage {
   @Container.config('teneo.task.worker.assignmentBatchSize')
   assignmentBatchSize: number
 
-  async buildState(tenantKey: string, config: WorkerConfig, traceId: string): Promise<State | undefined>  {
+  async buildState(tenantKey: string, config: WorkerConfig, traceId: string): Promise<string[][] | undefined>  {
     this.logger.info('Loading device app state', { traceId })
 
-    const state = new State()
+    // const state = new State()
     const deviceClient = this.clients.build(tenantKey, 'device-registry', DeviceClient)
     const packageClient = this.clients.build(tenantKey, 'package-registry', PackageClient)
     const exchangeClient = this.clients.build(tenantKey, 'package-exchange', ExchangeClient)
-
-    // DEVICES
-    this.logger.info('Loading all devices', { traceId })
-    const devices = await deviceClient.loadAll(this.deviceBatchSize, traceId)
-    if (!devices) {
-      this.logger.error('Error fetching fetch devices')
-      return
-    }
-    state.devices = devices as DeviceWithAssignments[]
-    const devicesById: { [key: string]: DeviceWithAssignments } = {}
-    for (const device of state.devices) {
-      device.assignments = []
-      devicesById[device.id] = device
-    }
-    // this.logger.info('device by id', { devicesById })
 
     // PACKAGES
     this.logger.info('Loading all packages', { traceId })
@@ -58,8 +43,8 @@ export class DevicePackage {
     const packagesById: { [key: string]: Package.Value } = {}
     for (const currentPackage of packages) {
       if (currentPackage.id) { packagesById[currentPackage.id] = currentPackage }
-      if (currentPackage.metadata?.bundleId) { state.packagesByBundleId[currentPackage.metadata.bundleId as string] = currentPackage }
-      if (currentPackage.metadata?.packageId) { state.packagesByBundleId[currentPackage.metadata.bundleId as string] = currentPackage }
+      // if (currentPackage.metadata?.bundleId) { state.packagesByBundleId[currentPackage.metadata.bundleId as string] = currentPackage }
+      // if (currentPackage.metadata?.packageId) { state.packagesByBundleId[currentPackage.metadata.bundleId as string] = currentPackage }
     }
 
     // ASSIGNMENTS
@@ -69,23 +54,35 @@ export class DevicePackage {
       this.logger.error('Error fetching assignments')
     }
 
-    const assignmentsById: { [key: string]: AssignmentCompact } = {}
+    const assignmentsByDeviceId: { [key: string]: AssignmentWithPackage[] } = {}
+    // const assignmentsById: { [key: string]: AssignmentCompact } = {}
     for (const assignment of assignments) {
-      if (assignment.id) { assignmentsById[assignment.id] = assignment }
+      if (!assignmentsByDeviceId[assignment.deviceId]) {
+        assignmentsByDeviceId[assignment.deviceId] = []
+      }
       assignment.package = packagesById[assignment.packageId]
-      const device = devicesById[assignment.deviceId]
-      if (device) { device.assignments.push(assignment) }
+      assignmentsByDeviceId[assignment.deviceId].push(assignment)
+      // if (assignment.id) { assignmentsById[assignment.id] = assignment }
+      // const device = devicesById[assignment.deviceId]
+      // if (device) { device.assignments.push(assignment) }
     }
-    state.assignments = assignments
+    // state.assignments = assignments
 
+    // DEVICES
+    this.logger.info('Loading all devices', { traceId })
+    const reportRows = await deviceClient.loadAll(assignmentsByDeviceId, this.deviceBatchSize, traceId)
+    if (!reportRows) {
+      this.logger.error('Error fetching devices and buidling report')
+      return
+    }
 
-    this.logger.debug('Loaded State', {
-      devices: devices.length,
+    this.logger.debug('Loaded Report Rows', {
+      reportRows: reportRows.length,
       assignments: assignments.length,
       packages: packages.length,
       traceId
     })
-    return state
+    return reportRows
   }
 
 }

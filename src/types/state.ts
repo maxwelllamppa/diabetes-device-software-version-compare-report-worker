@@ -12,38 +12,38 @@ export interface AssignmentWithPackage extends AssignmentCompact {
   status: Package.Assignment.Status
 }
 
-export interface DeviceCompact {
-  id: string
-  businessId: string
-  // metadata: Json.Map
-  softwareVersionNumber: string
-}
+// export interface DeviceCompact {
+//   id: string
+//   businessId: string
+//   // metadata: Json.Map
+//   softwareVersionNumber: string
+// }
 
-export interface DeviceWithAssignments extends DeviceCompact {
-  assignments: AssignmentWithPackage[]
-}
-
-
-export interface AppData {
-  name: string
-  status: string
-  installedVersion?: string
-  installDate?: string
-  // iOS field
-  bundleId?: string
-  // Android field
-  packageId?: string
-}
+// export interface DeviceWithAssignments extends DeviceCompact {
+//   assignments: AssignmentWithPackage[]
+// }
 
 
-export class State {
+// export interface AppData {
+//   name: string
+//   status: string
+//   installedVersion?: string
+//   installDate?: string
+//   // iOS field
+//   bundleId?: string
+//   // Android field
+//   packageId?: string
+// }
 
-  devices: DeviceWithAssignments[] = []
 
-  assignments: AssignmentWithPackage[] = []
+// export class State {
 
-  packagesByBundleId: { [key: string]: Package.Value } = {}
+//   devices: DeviceWithAssignments[] = []
 
-  packages: Package.Value[] = []
+//   assignments: AssignmentWithPackage[] = []
 
-}
+//   packagesByBundleId: { [key: string]: Package.Value } = {}
+
+//   packages: Package.Value[] = []
+
+// }
