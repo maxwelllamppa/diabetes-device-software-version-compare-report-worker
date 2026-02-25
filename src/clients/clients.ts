@@ -37,7 +37,7 @@ export class DeviceClient extends DeviceRegistryClient {
   async loadAll(assignmentsByDeviceId: { [key: string]: AssignmentWithPackage[] }, limit: number, traceId: string): Promise<string[][] | undefined> {
     let allDevicesCount = 0
     let loadMore = true
-    const reportRows = [ [ 'Serial Number', 'Metadata Version', 'Assignment Version' ] ]
+    const reportRows = [ [ 'Serial Number', 'Metadata Version', 'Assignment Version', 'Device UpdatedAt' ] ]
 
     while (loadMore) {
       const response = await this.get<DeviceResponse, DeviceResponse>('LoadAllDevices', traceId)
@@ -63,6 +63,7 @@ export class DeviceClient extends DeviceRegistryClient {
           // this.logger.info(device.businessId)
           const {
             businessId,
+            updatedAt,
             metadata: {
               softwareVersionNumber
             }
@@ -84,7 +85,8 @@ export class DeviceClient extends DeviceRegistryClient {
             reportRows.push([
               businessId,
               (softwareVersionNumber as string) || NA_STRING,
-              (assignment.package?.name as string) || NA_STRING
+              (assignment.package?.name as string) || NA_STRING,
+              (updatedAt as Date).toString()
             ])
           }
         }

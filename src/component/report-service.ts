@@ -5,8 +5,8 @@ import * as Rest from '@teneo/rest-client-components'
 import { Logging } from '@teneo/base'
 import { WorkerConfig } from '../worker-config.js'
 import { DevicePackage } from '../device_package.js'
-// import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-// import { Readable } from 'stream'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { Readable } from 'stream'
 
 // const NA_STRING = ''
 
@@ -65,47 +65,47 @@ export class ReportService {
     return typeof obj[Symbol.iterator] === 'function'
   }
 
-  // private async uploadToS3(params: {
-  //   bucket: string
-  //   key: string
-  //   content: string | Buffer | Readable
-  //   contentType: string
-  // }) {
-  //   const s3 = new S3Client({ region: this.regionName }) // credentials are read from env
+  private async uploadToS3(params: {
+    bucket: string
+    key: string
+    content: string | Buffer | Readable
+    contentType: string
+  }) {
+    const s3 = new S3Client({ region: this.regionName }) // credentials are read from env
 
-  //   const command = new PutObjectCommand({
-  //     Bucket: params.bucket,
-  //     Key: params.key,
-  //     Body: params.content,
-  //     ContentType: params.contentType
-  //     // ServerSideEncryption: 'aws:kms',
-  //     // SSEKMSKeyId: this.KMS_KEY_ARN
-  //   })
+    const command = new PutObjectCommand({
+      Bucket: params.bucket,
+      Key: params.key,
+      Body: params.content,
+      ContentType: params.contentType
+      // ServerSideEncryption: 'aws:kms',
+      // SSEKMSKeyId: this.KMS_KEY_ARN
+    })
 
-  //   await s3.send(command)
-  // }
+    await s3.send(command)
+  }
 
   private async writeReport(tenantKey: string, config: WorkerConfig, reportData: string[][], logger: Logging.Logger, traceId: string) {
-    logger.info('Report data:')
-    // logger.info(JSON.stringify(reportData, null, ' '))
-    const exit = true
-    if (exit) {
-      return
-    }
-    // logger.info('Writing to s3 bucket')
+    // logger.info('Report data:')
+    // // logger.info(JSON.stringify(reportData, null, ' '))
+    // const exit = true
+    // if (exit) {
+    //   return
+    // }
+    logger.info('Writing to s3 bucket')
 
-    // const now = new Date()
-    // const timestamp = now.toISOString().replace(/[:.]/g, '-')
+    const now = new Date()
+    const timestamp = now.toISOString().replace(/[:.]/g, '-')
 
-    // const csvString = reportData.map(row => row.join(',')).join('\n')
-    // // console.log(csvString)
+    const csvString = reportData.map(row => row.join(',')).join('\n')
+    // console.log(csvString)
 
-    // await this.uploadToS3({
-    //   bucket: this.s3BucketName,
-    //   key: `${this.reportFilePrefix}-${timestamp}.csv`,
-    //   content: csvString,
-    //   contentType: 'text/csv'
-    // })
+    await this.uploadToS3({
+      bucket: this.s3BucketName,
+      key: `${this.reportFilePrefix}-${timestamp}.csv`,
+      content: csvString,
+      contentType: 'text/csv'
+    })
   }
 
 }
