@@ -33,11 +33,16 @@ export class IntegrationClient extends Client.Standard.V2 {
 export class DeviceClient extends DeviceRegistryClient {
 
   @Container.inject({ role: 'logger' })
-
-  async loadAll(assignmentsByDeviceId: { [key: string]: AssignmentWithPackage[] }, limit: number, traceId: string): Promise<string[][] | undefined> {
+  async loadAll(
+    assignmentsByDeviceId: { [key: string]: AssignmentWithPackage[] },
+    limit: number,
+    traceId: string
+  ): Promise<string[][] | undefined> {
     let allDevicesCount = 0
     let loadMore = true
     const reportRows = [ [ 'Serial Number', 'Metadata Version', 'Assignment Version', 'Device UpdatedAt' ] ]
+
+    const hasAnyLetters = (val?: string | null) => !!val && /[A-Za-z]/.test(val)
 
     while (loadMore) {
       const response = await this.get<DeviceResponse, DeviceResponse>('LoadAllDevices', traceId)
@@ -51,49 +56,48 @@ export class DeviceClient extends DeviceRegistryClient {
         throw response.errors
       }
 
-
       if (response.value.items.length > 0) {
         allDevicesCount += response.value.items.length
+
         for (const device of response.value.items) {
-          // const deviceCompact: DeviceCompact = {
-          //   id: device.id,
-          //   businessId: device.businessId,
-          //   softwareVersionNumber: device.metadata.softwareVersionNumber as string
-          // }
-          // this.logger.info(device.businessId)
           const {
             businessId,
             updatedAt,
-            metadata: {
-              softwareVersionNumber
-            }
+            metadata: { softwareVersionNumber }
           } = device
-          if (!softwareVersionNumber) {
-            // this.logger.info('SOFTWARE VERSION NUMBER NOT FOUND ', { device: device as any })
-            continue
-          }
-          // this.logger.info('LOOK', { device: device as any })
-          const assignments = assignmentsByDeviceId[device.id]
 
-          if (!assignments) {
-            continue
-          }
+          if (!softwareVersionNumber) { continue }
+
+          // Skip if softwareVersionNumber contains any letters
+          if (hasAnyLetters(softwareVersionNumber as string)) { continue }
+
+          const assignments = assignmentsByDeviceId[device.id]
+          if (!assignments) { continue }
+
           for (const assignment of assignments) {
-            if (softwareVersionNumber === assignment.package?.name) {
-              continue
-            }
+            const packageName = assignment.package?.name as string | undefined
+
+            if (!packageName) { continue }
+
+            // Skip if assignment.package.name contains any letters
+            if (hasAnyLetters(packageName)) { continue }
+
+            if (softwareVersionNumber === packageName) { continue }
+
             reportRows.push([
               businessId,
               (softwareVersionNumber as string) || NA_STRING,
-              (assignment.package?.name as string) || NA_STRING,
+              packageName || NA_STRING,
               (updatedAt as Date).toString()
             ])
           }
         }
+
         this.logger?.info(
           `Fetched ${response.value.items.length} devices on this page. Total so far: ${allDevicesCount}`
         )
       }
+
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       loadMore = response.value.nextUrl !== undefined || response.value.next !== undefined
